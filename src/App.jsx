@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { demoBloqueado, sair, sessaoAtual, temServidor } from './auth.js';
 import Login from './Login.jsx';
-import { useStore } from './store.js';
+import { encerrarServidor, iniciarServidor, useStore } from './store.js';
+import { aguardarGravacao, limparAviso, temPendencia, useAviso, useSyncStatus } from './sync.js';
 import { logoRedonda, useTema } from './theme.js';
 import { Icon } from './ui.jsx';
 
@@ -35,6 +36,10 @@ const K_ABA = 'casol_aba';
 export default function App() {
   const [tema, alternar] = useTema();
   const S = useStore();
+  const sy = useSyncStatus();
+  const aviso = useAviso();
+  const [erroCarga, setErroCarga] = useState('');
+  const [tentativa, setTentativa] = useState(0);
   const [sessao, setSessao] = useState(undefined);
   const [aba, setAba] = useState(() => { try { return localStorage.getItem(K_ABA) || 'painel'; } catch { return 'painel'; } });
 
@@ -45,6 +50,16 @@ export default function App() {
     })();
   }, []);
   useEffect(() => { try { localStorage.setItem(K_ABA, aba); } catch { /* sem storage */ } }, [aba]);
+
+  /* modo servidor: ao entrar, carrega do Supabase o que este papel pode ver */
+  useEffect(() => {
+    if (!temServidor || !sessao) return undefined;
+    let vivo = true; setErroCarga('');
+    iniciarServidor(sessao.papel)
+      .then((r) => { if (vivo && r.motoristaId) setSessao((s) => (s && s.papel === 'motorista' ? { ...s, motoristaId: r.motoristaId } : s)); })
+      .catch((e) => { if (vivo) setErroCarga(e.message || 'Não foi possível carregar os dados.'); });
+    return () => { vivo = false; };
+  }, [sessao?.papel, sessao?.email, tentativa]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   /* brilho que segue o mouse nos cartões */
   useEffect(() => {
@@ -58,24 +73,43 @@ export default function App() {
   }, []);
 
   const entrou = (s) => { if (!temServidor) sessionStorage.setItem(K_SESSAO, JSON.stringify(s)); setSessao(s); };
-  const saiu = async () => { await sair(); sessionStorage.removeItem(K_SESSAO); setSessao(null); };
+  const saiu = async () => {
+    if (temServidor && temPendencia()) {
+      const ok = await aguardarGravacao();
+      if (!ok && !window.confirm('Há alterações que ainda não foram salvas na nuvem. Sair mesmo assim e perder essas alterações?')) return;
+    }
+    await sair(); encerrarServidor(); sessionStorage.removeItem(K_SESSAO); setSessao(null);
+  };
 
   if (demoBloqueado) return <main className="main" style={{ marginLeft: 0 }}><div className="card"><div className="empty"><b>Sistema não configurado</b><p>O acesso por senha (Supabase) não está configurado neste ambiente, então o sistema não abre. Fale com o administrador.</p></div></div></main>;
   if (sessao === undefined) return null;
   if (!sessao) return <Login tema={tema} onEntrar={entrou} />;
+  if (temServidor && !S.carregado) {
+    return (
+      <main className="main" style={{ marginLeft: 0 }}><div className="card"><div className="empty">
+        {erroCarga ? (<><b>Não foi possível carregar</b><p>{erroCarga}</p><div className="row" style={{ justifyContent: 'center' }}><button className="btn ac" onClick={() => setTentativa((t) => t + 1)}>Tentar de novo</button><button className="btn" onClick={saiu}>Sair</button></div></>) : 'Carregando dados…'}
+      </div></div></main>
+    );
+  }
 
   const Toggle = (
     <button className="btn icon" onClick={alternar} aria-label={tema === 'escuro' ? 'Usar tema claro' : 'Usar tema escuro'} title="Tema">
       <Icon n={tema === 'escuro' ? 'sun' : 'moon'} size={20} />
     </button>
   );
-  const Status = <span className="pill"><b />{temServidor ? 'Salvo na nuvem' : 'Demonstração · salvo neste navegador'}</span>;
+  const Status = temServidor
+    ? <span className="pill" role="status" aria-live="polite"><b style={sy.estado === 'erro' ? { background: 'var(--bad)', boxShadow: 'none' } : undefined} />{sy.estado === 'erro' ? `Erro ao salvar (${sy.pendentes} pendente${sy.pendentes === 1 ? '' : 's'}). Tentando de novo…` : sy.estado === 'salvando' ? 'Salvando…' : 'Salvo na nuvem'}</span>
+    : <span className="pill"><b />Demonstração · salvo neste navegador</span>;
   const Carregando = <div className="empty">Carregando…</div>;
+  const Aviso = aviso && (
+    <div className={`aviso ${aviso.tipo}`} role="alert"><span>{aviso.texto}</span><button className="btn sm" onClick={limparAviso}>Entendi</button></div>
+  );
 
   /* motorista: só a tela do celular */
   if (sessao.papel === 'motorista') {
     return (
       <main className="main" style={{ marginLeft: 0 }}>
+        {Aviso}
         <div className="row between" style={{ marginBottom: 16 }}>
           <img src={logoRedonda(tema)} alt="Casol Express" width="52" height="52" style={{ borderRadius: '50%' }} />
           <div className="row">{Toggle}<button className="btn icon" onClick={saiu} aria-label="Sair"><Icon n="logout" size={20} /></button></div>
@@ -89,6 +123,7 @@ export default function App() {
   if (sessao.papel === 'colaborador') {
     return (
       <main className="main" style={{ marginLeft: 0 }}>
+        {Aviso}
         <div className="row between" style={{ marginBottom: 16 }}>
           <img src={logoRedonda(tema)} alt="Casol Express" width="52" height="52" style={{ borderRadius: '50%' }} />
           <div className="row">{Toggle}<button className="btn icon" onClick={saiu} aria-label="Sair"><Icon n="logout" size={20} /></button></div>
@@ -101,6 +136,7 @@ export default function App() {
   const [, titulo, sub, , Tela] = NAV.find((n) => n[0] === aba) || NAV[0];
   return (
     <>
+      {Aviso}
       <nav className="rail" aria-label="Menu principal">
         <img className="logo" src={logoRedonda(tema)} alt="Casol Express" />
         {NAV.map(([id, nome, , icone]) => (

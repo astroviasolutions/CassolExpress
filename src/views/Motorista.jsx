@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { acertoQuinzena, brl, dataBR, hoje, num, OCORRENCIAS, quinzena, quinzenaAnterior, STATUS } from '../lib.js';
+import { acertoQuinzena, brl, dataBR, diaLocal, hoje, num, OCORRENCIAS, quinzena, quinzenaAnterior, STATUS } from '../lib.js';
 import { act, useStore } from '../store.js';
+import { temServidor } from '../auth.js';
 import { avaliarSla, STATUS_SLA } from '../sla.js';
 import { Chips, Icon, Modal, Vazio } from '../ui.jsx';
 import { CelulaSla } from './Sla.jsx';
@@ -24,7 +25,7 @@ export default function Motorista({ modo = 'dono', motoristaId }) {
   const h = hoje();
 
   const dados = useMemo(() => {
-    const meus = S.paradas.filter((p) => p.motoristaId === id && (p.status === 'pendente' || (p.baixaEm || '').slice(0, 10) === h));
+    const meus = S.paradas.filter((p) => p.motoristaId === id && (p.status === 'pendente' || diaLocal(p.baixaEm) === h));
     const pend = meus.filter((p) => p.status === 'pendente');
     const feitas = meus.filter((p) => p.status !== 'pendente').sort((a, b) => (b.baixaEm || '').localeCompare(a.baixaEm || ''));
     const porCidade = {};
@@ -53,7 +54,7 @@ export default function Motorista({ modo = 'dono', motoristaId }) {
       )}
       <div className="phone">
         <div className="row between"><div><p className="k-l">Olá,</p><b style={{ font: 'italic 800 22px var(--f1)', textTransform: 'uppercase' }}>{m.nome}</b></div></div>
-        <div style={{ margin: '14px 0' }}><Chips valor={aba} onChange={setAba} opcoes={[['rota', 'Minha rota'], ['extrato', 'Meu extrato'], ['metas', 'Metas']]} /></div>
+        <div style={{ margin: '14px 0' }}><Chips valor={aba} onChange={setAba} opcoes={modo === 'motorista' && temServidor ? [['rota', 'Minha rota']] : [['rota', 'Minha rota'], ['extrato', 'Meu extrato'], ['metas', 'Metas']]} /></div>
 
         {aba === 'rota' ? (<>
           <p><b>{num(dados.entPac)}</b> de {num(dados.totalPac)} pacotes entregues</p>

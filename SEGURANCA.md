@@ -22,13 +22,15 @@ Estado em 18/11/2026 (projeto `peyesvlhklyqngwzggem`, São Paulo): **banco aplic
 - Testado no banco real (transação desfeita): anônimo não acessa nada; logado sem perfil vê 0 linhas e não grava; dono lê e grava; ninguém apaga perfis pela API.
 - Avisos do Supabase: sobram só os 10 "função SECURITY DEFINER executável por logado", que são as RPCs de propósito (cada uma confere a permissão por dentro). O gatilho `novo_usuario` foi fechado.
 - Neste projeto as tabelas **não vêm liberadas para a API**: foi preciso conceder SELECT/INSERT/UPDATE/DELETE ao `authenticated` (o RLS decide quem é dono). Tabela nova precisa dos mesmos GRANTs (ver `endurecimento.sql`).
-- Ordem do SQL: `schema.sql` → `ponto.sql` → `sla.sql` → `endurecimento.sql`. O colaborador e o motorista só acessam o que é deles por funções. Testado em Postgres real (ver `supabase/`).
+- Ordem do SQL: `schema.sql` → `ponto.sql` → `sla.sql` → `endurecimento.sql` → `sincronizacao.sql` → `concorrencia.sql`. O colaborador e o motorista só acessam o que é deles por funções. Testado em Postgres real (ver `supabase/`).
 - **[você]** Authentication → desativar **Allow new users to sign up** (a chave publicável é pública: sem isso qualquer pessoa cria conta).
 - **[você]** Authentication → Password: tamanho mínimo **10+**; ativar proteção contra senhas vazadas (plano Pro); ativar **MFA (TOTP)** para o dono.
 - **[você]** Nunca usar a `service_role` no front. Ela só entra em tarefas do servidor (backup), como segredo.
 - Depois de aplicar o SQL, rodar os avisos de segurança do Supabase de novo e conferir que não há tabela sem RLS.
 - **Dado pessoal (LGPD):** nome e endereço de destinatários, localização de colaboradores. Acesso mínimo, sem logs de localização contínua (o ponto lê a posição só na batida).
-- **Risco atual:** os dados do app (exceto o ponto) ainda ficam no `localStorage` do navegador e **não são apagados no logout**. Resolver ao ligar o `store.js` ao Supabase.
+- **Dados no navegador:** em modo servidor nada da operação vai para `localStorage` (a memória é limpa no logout). Dados de demonstração antigos que existirem no navegador não são usados nem enviados.
+- **Travas:** *Apagar tudo* e *Carregar dados fictícios* ficam bloqueados com dados reais.
+- **Edição simultânea:** travada por versão em cada linha (`concorrencia.sql`): a segunda pessoa é barrada e avisada, nada é sobrescrito. Excluir uma linha não confere versão. Atualização por consulta a cada 30 s, não em tempo real.
 
 ## 4. Backup
 Camadas, da mais para a menos importante:

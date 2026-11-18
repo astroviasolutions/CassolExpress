@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { dataBR, STATUS } from '../lib.js';
+import { dataBR, diaLocal, horaLocal, STATUS } from '../lib.js';
 import { act, useStore } from '../store.js';
 import { Chips, Modal, Vazio } from '../ui.jsx';
 
@@ -58,7 +58,7 @@ export default function Entregas() {
             <div><p className="k-l">Pacotes ({parada.pacotes.length})</p><p className="small">{parada.pacotes.join(' · ')}</p></div>
             <label className="f">Motorista<select className="sel" value={parada.motoristaId || ''} onChange={(e) => act.upd('paradas', parada.id, { motoristaId: e.target.value || null })}><option value="">Sem motorista</option>{S.motoristas.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}</select></label>
             <div><p className="k-l">Situação</p><Chips valor={parada.status} onChange={(v) => (v === 'pendente' ? act.desfazer(parada.id) : act.baixar(parada.id, v, parada.gps))} opcoes={Object.entries(STATUS)} /></div>
-            {parada.baixaEm && <p className="small muted">Baixa em {dataBR(parada.baixaEm)} {parada.baixaEm.slice(11, 16)}{parada.gps && <> · <a href={`https://www.google.com/maps?q=${parada.gps.lat},${parada.gps.lng}`} target="_blank" rel="noreferrer">ver posição</a></>}</p>}
+            {parada.baixaEm && <p className="small muted">Baixa em {dataBR(diaLocal(parada.baixaEm))} {horaLocal(parada.baixaEm)}{parada.gps && <> · <a href={`https://www.google.com/maps?q=${parada.gps.lat},${parada.gps.lng}`} target="_blank" rel="noreferrer">ver posição</a></>}</p>}
             <div className="row"><button className="btn" onClick={() => setSel(null)}>Fechar</button></div>
           </div>
         )}

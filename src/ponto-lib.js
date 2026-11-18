@@ -73,6 +73,8 @@ export function lerCoordenadas(txt) {
 }
 
 const MSG = {
+  conflito_edicao: 'Outra pessoa alterou isto ao mesmo tempo. Nada foi sobrescrito. Feche, abra de novo para ver a versão mais recente e refaça a alteração.',
+  pedido_nao_encontrado: 'Este pedido já foi decidido por outra pessoa.',
   sem_ponto: 'O seu cadastro não usa registro de ponto.',
   sem_local: 'O local de trabalho ainda não foi cadastrado. Fale com o administrador.',
   gps_fraco: 'O sinal de GPS está fraco. Vá para um lugar aberto, espere uns segundos e tente de novo.',

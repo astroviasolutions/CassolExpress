@@ -8,7 +8,11 @@ export const parse = (s) => new Date(s + 'T12:00:00');
 export const addDias = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return iso(d); };
 export const diasEntre = (a, b) => Math.round((parse(b) - parse(a)) / 864e5);
 export const dataBR = (s) => (s ? s.slice(0, 10).split('-').reverse().join('/') : '');
-export const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
+/* UUID de verdade: o banco usa uuid como chave. */
+export const uid = () => (globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { const r = (Math.random() * 16) | 0; return (c === 'x' ? r : (r & 3) | 8).toString(16); }));
+/* Dia e hora LOCAIS de um instante (o banco devolve em UTC: uma baixa às 22h não pode virar "amanhã"). */
+export const diaLocal = (s) => (!s ? '' : s.length === 10 ? s : iso(new Date(s)));
+export const horaLocal = (s) => { if (!s) return ''; const d = new Date(s); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 export const pct = (n) => `${(n * 100).toFixed((n * 100) % 1 === 0 ? 0 : 1).replace('.', ',')}%`;
 export const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 export const rotuloMes = (s) => `${MESES[parse(s).getMonth()]} ${parse(s).getFullYear()}`;
@@ -101,7 +105,7 @@ export function metricas(S, { ini, fim, empresaId = '', motoristaId = '' }) {
       const e = emp.get(r.empresaId);
       if (e?.tarifa > 0) o.receita += n * e.tarifa; else o.semTarifa = true;
       const limite = addDias(r.data, e?.prazoDias ?? 1);
-      if ((p.baixaEm || r.data).slice(0, 10) <= limite) o.noPrazo += n; else o.foraPrazo += n;
+      if ((p.baixaEm ? diaLocal(p.baixaEm) : r.data) <= limite) o.noPrazo += n; else o.foraPrazo += n;
     } else if (p.status === 'pendente') {
       o.pendentes += n;
     } else {

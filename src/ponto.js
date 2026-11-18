@@ -23,7 +23,7 @@ export function posicao() {
 }
 
 const doServidor = {
-  colab: (r) => ({ id: r.id, nome: r.nome, funcao: r.funcao || '', ativo: r.ativo, endereco: r.endereco || '', lat: r.lat, lng: r.lng, raio: r.raio_m, cargaMin: r.carga_min, vinculado: !!r.user_id, temLocal: r.lat != null && r.lng != null, batePonto: r.bate_ponto !== false }),
+  colab: (r) => ({ id: r.id, nome: r.nome, funcao: r.funcao || '', ativo: r.ativo, endereco: r.endereco || '', lat: r.lat, lng: r.lng, raio: r.raio_m, cargaMin: r.carga_min, vinculado: !!r.user_id, temLocal: r.lat != null && r.lng != null, batePonto: r.bate_ponto !== false, versao: r.versao }),
   batida: (r) => ({ id: r.id, colaboradorId: r.colaborador_id, em: r.em, tipo: r.tipo, origem: r.origem, dist: r.dist_m }),
   pedido: (r) => ({ id: r.id, colaboradorId: r.colaborador_id, data: r.dia, tipo: r.tipo, hora: String(r.hora).slice(0, 5), motivo: r.motivo, status: r.status, resposta: r.resposta, criadoEm: r.criado_em }),
 };
@@ -84,7 +84,13 @@ function useDonoServidor(mes) {
     ...d, recarregar,
     async salvarColab(c) {
       const cli = await sb();
-      const q = c.id ? cli.from('colaboradores').update(paraServidor(c)).eq('id', c.id).select('id').single() : cli.from('colaboradores').insert(paraServidor(c)).select('id').single();
+      if (c.id) {   // edição: só grava se ninguém mudou desde que o cadastro foi aberto
+        const { data: lin, error: e1 } = await cli.from('colaboradores').update(paraServidor(c)).eq('id', c.id).eq('versao', c.versao ?? 1).select('id');
+        if (e1) throw new Error(e1.message);
+        if (!lin?.length) { await recarregar(); throw new Error('conflito_edicao'); }
+        await recarregar(); return c.id;
+      }
+      const q = cli.from('colaboradores').insert(paraServidor(c)).select('id').single();
       const { data, error } = await q;
       if (error) throw new Error(error.message); await recarregar(); return data.id;
     },
