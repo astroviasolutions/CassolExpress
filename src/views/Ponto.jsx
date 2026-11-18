@@ -14,7 +14,7 @@ const horasParaMin = (t) => { const n = Number(String(t).replace(',', '.')); ret
 /* ---------- cadastro do colaborador e do local do ponto ---------- */
 function ColabForm({ aberto, colab, onFechar, P }) {
   const novo = !colab;
-  const ini = () => ({ nome: colab?.nome || '', funcao: colab?.funcao || '', endereco: colab?.endereco || '', lat: colab?.lat ?? '', lng: colab?.lng ?? '', raio: colab?.raio || RAIO_PADRAO, cargaH: colab?.cargaMin ? String(colab.cargaMin / 60).replace('.', ',') : '', ativo: colab?.ativo !== false, email: '' });
+  const ini = () => ({ nome: colab?.nome || '', funcao: colab?.funcao || '', endereco: colab?.endereco || '', lat: colab?.lat ?? '', lng: colab?.lng ?? '', raio: colab?.raio || RAIO_PADRAO, cargaH: colab?.cargaMin ? String(colab.cargaMin / 60).replace('.', ',') : '', ativo: colab?.ativo !== false, batePonto: colab?.batePonto !== false, email: '' });
   const [f, setF] = useState(ini);
   const [cola, setCola] = useState('');
   const [msg, setMsg] = useState(null);
@@ -32,14 +32,14 @@ function ColabForm({ aberto, colab, onFechar, P }) {
   async function salvar() {
     const lat = f.lat === '' ? null : Number(String(f.lat).replace(',', '.')), lng = f.lng === '' ? null : Number(String(f.lng).replace(',', '.'));
     if (!f.nome.trim()) return setMsg({ ok: false, texto: 'Informe o nome.' });
-    if ((lat == null) !== (lng == null) || (lat != null && (!(Math.abs(lat) <= 90) || !(Math.abs(lng) <= 180)))) return setMsg({ ok: false, texto: 'Latitude e longitude inválidas.' });
+    if (f.batePonto && ((lat == null) !== (lng == null) || (lat != null && (!(Math.abs(lat) <= 90) || !(Math.abs(lng) <= 180))))) return setMsg({ ok: false, texto: 'Latitude e longitude inválidas.' });
     const raio = Math.round(Number(f.raio));
-    if (!(raio >= 20 && raio <= 1000)) return setMsg({ ok: false, texto: 'O raio deve ficar entre 20 e 1000 metros.' });
-    if (f.cargaH && horasParaMin(f.cargaH) == null) return setMsg({ ok: false, texto: 'Carga diária inválida. Ex.: 8 ou 6,5.' });
+    if (f.batePonto && !(raio >= 20 && raio <= 1000)) return setMsg({ ok: false, texto: 'O raio deve ficar entre 20 e 1000 metros.' });
+    if (f.batePonto && f.cargaH && horasParaMin(f.cargaH) == null) return setMsg({ ok: false, texto: 'Carga diária inválida. Ex.: 8 ou 6,5.' });
     setBusy(true);
     try {
-      const id = await P.salvarColab({ ...(colab ? { id: colab.id } : {}), nome: f.nome.trim(), funcao: f.funcao.trim(), endereco: f.endereco.trim(), lat, lng, raio, cargaMin: horasParaMin(f.cargaH), ativo: f.ativo });
-      if (f.email.trim() && temServidor) await P.vincular(id, f.email.trim());
+      const id = await P.salvarColab({ ...(colab ? { id: colab.id } : {}), nome: f.nome.trim(), funcao: f.funcao.trim(), endereco: f.endereco.trim(), lat, lng, raio, cargaMin: f.batePonto ? horasParaMin(f.cargaH) : colab?.cargaMin ?? null, ativo: f.ativo, batePonto: f.batePonto });
+      if (f.batePonto && f.email.trim() && temServidor) await P.vincular(id, f.email.trim());
       onFechar();
     } catch (e) { setMsg({ ok: false, texto: mensagemErro(e) }); }
     setBusy(false);
@@ -51,8 +51,10 @@ function ColabForm({ aberto, colab, onFechar, P }) {
         <div className="form">
           <label className="f">Nome<input className="inp" value={f.nome} onChange={(e) => set('nome', e.target.value)} /></label>
           <label className="f">Função<input className="inp" value={f.funcao} placeholder="Operacional, Ajudante…" onChange={(e) => set('funcao', e.target.value)} /></label>
-          <label className="f">Carga diária (horas, opcional)<input className="inp" inputMode="decimal" value={f.cargaH} placeholder="Ex.: 8" onChange={(e) => set('cargaH', e.target.value)} /></label>
         </div>
+        <label className="row"><input type="checkbox" checked={f.batePonto} onChange={(e) => set('batePonto', e.target.checked)} /> <b>Bate ponto</b> <span className="small muted">(desmarque para quem não registra ponto: ele não aparece na folha nem consegue bater)</span></label>
+        {f.batePonto && (<>
+        <label className="f" style={{ maxWidth: 260 }}>Carga diária (horas, opcional)<input className="inp" inputMode="decimal" value={f.cargaH} placeholder="Ex.: 8" onChange={(e) => set('cargaH', e.target.value)} /></label>
         <h3 style={{ font: 'italic 700 16px var(--f1)', textTransform: 'uppercase' }}>Local onde o ponto pode ser batido</h3>
         <label className="f">Endereço (referência)<input className="inp" value={f.endereco} onChange={(e) => set('endereco', e.target.value)} /></label>
         <div className="row">
@@ -70,6 +72,7 @@ function ColabForm({ aberto, colab, onFechar, P }) {
           <label className="f">E-mail de acesso do colaborador<input className="inp" type="email" value={f.email} placeholder={colab.vinculado ? 'Já tem acesso. Preencha só para trocar.' : 'Crie o usuário em Authentication > Users e informe o e-mail'} onChange={(e) => set('email', e.target.value)} /></label>
         )}
         {temServidor && novo && <p className="small muted">Depois de salvar, edite o colaborador para ligar o e-mail de acesso.</p>}
+        </>)}
         <label className="row"><input type="checkbox" checked={f.ativo} onChange={(e) => set('ativo', e.target.checked)} /> Ativo (pode bater ponto)</label>
         {msg && <p role="status" aria-live="polite" className={`small ${msg.ok === false ? 'l-err' : 'muted'}`}>{msg.texto}</p>}
         <div className="row between"><button className="btn" onClick={onFechar}>Cancelar</button><button className="btn ac" disabled={busy} onClick={salvar}>Salvar</button></div>
@@ -115,8 +118,10 @@ export default function Ponto() {
   const [erro, setErro] = useState('');
   const P = usePontoDono(mes);
 
-  const ativos = P.colaboradores.filter((c) => c.ativo);
-  const sel = P.colaboradores.find((c) => c.id === quem) || ativos[0] || P.colaboradores[0];
+  const usaPonto = (c) => c.batePonto !== false || P.batidas.some((b) => b.colaboradorId === c.id);   // quem parou de bater mantém o histórico
+  const batem = P.colaboradores.filter(usaPonto);
+  const ativos = batem.filter((c) => c.ativo && c.batePonto !== false);
+  const sel = batem.find((c) => c.id === quem) || ativos[0] || batem[0];
   const pend = P.pedidos.filter((p) => p.status === 'pendente');
   const nome = (id) => P.colaboradores.find((c) => c.id === id)?.nome || '—';
 
@@ -172,7 +177,7 @@ export default function Ponto() {
 
       {aba === 'folha' && sel && folha && (<>
         <div className="card row between">
-          <label className="f" style={{ minWidth: 220 }}>Colaborador<select className="sel" value={sel.id} onChange={(e) => setQuem(e.target.value)}>{P.colaboradores.map((c) => <option key={c.id} value={c.id}>{c.nome}{c.ativo ? '' : ' (inativo)'}</option>)}</select></label>
+          <label className="f" style={{ minWidth: 220 }}>Colaborador<select className="sel" value={sel.id} onChange={(e) => setQuem(e.target.value)}>{batem.map((c) => <option key={c.id} value={c.id}>{c.nome}{c.ativo && c.batePonto !== false ? '' : ' (inativo)'}</option>)}</select></label>
           <NavMes mes={mes} onChange={setMes} max={mesAtual} />
         </div>
         <PontoFolha nome={sel.nome} funcao={sel.funcao} mes={mes} folha={folha} cargaMin={sel.cargaMin} onEditar={(d) => setDia(d)} />
@@ -199,10 +204,10 @@ export default function Ponto() {
             <div className="list">
               {P.colaboradores.map((c) => (
                 <div className="item" key={c.id}>
-                  <div><b>{c.nome}</b>{c.funcao && <span className="muted"> · {c.funcao}</span>}{!c.ativo && <span className="tag" style={{ marginLeft: 8 }}>Inativo</span>}
-                    <div className="small muted">{c.temLocal ? `${c.endereco || 'Local definido'} · raio ${c.raio || RAIO_PADRAO} m` : <span style={{ color: 'var(--bad)' }}>Sem local: não consegue bater ponto</span>}{temServidor && ` · ${c.vinculado ? 'com acesso' : 'sem acesso ao app'}`}</div></div>
+                  <div><b>{c.nome}</b>{c.funcao && <span className="muted"> · {c.funcao}</span>}{!c.ativo && <span className="tag" style={{ marginLeft: 8 }}>Inativo</span>}{c.batePonto === false && <span className="tag" style={{ marginLeft: 8 }}>Não bate ponto</span>}
+                    <div className="small muted">{c.batePonto === false ? 'Sem registro de ponto' : c.temLocal ? `${c.endereco || 'Local definido'} · raio ${c.raio || RAIO_PADRAO} m` : <span style={{ color: 'var(--bad)' }}>Sem local: não consegue bater ponto</span>}{temServidor && c.batePonto !== false && ` · ${c.vinculado ? 'com acesso' : 'sem acesso ao app'}`}</div></div>
                   <div className="row">
-                    {!temServidor && <button className="btn sm" onClick={() => setVer(c.id)}>Ver como colaborador</button>}
+                    {!temServidor && c.batePonto !== false && <button className="btn sm" onClick={() => setVer(c.id)}>Ver como colaborador</button>}
                     <button className="btn sm" onClick={() => setEdit({ colab: c })}>Editar</button>
                     <button className="btn sm danger" aria-label={`Remover ${c.nome}`} onClick={() => window.confirm(`Remover ${c.nome}? As batidas dele também serão apagadas. Para só impedir novas batidas, desmarque “Ativo”.`) && agir(() => P.removerColab(c.id))}><Icon n="x" size={14} /></button>
                   </div>

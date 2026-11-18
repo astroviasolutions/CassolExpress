@@ -1,10 +1,17 @@
 import { useState } from 'react';
 import { brl } from '../lib.js';
 import { act, getState, useStore } from '../store.js';
+import { METRICAS_SLA, MODOS_SLA, regrasEfetivas } from '../sla.js';
 import { Icon, Money } from '../ui.jsx';
 
 /* grava só ao sair do campo (evita regravar a cada tecla) */
 const Texto = ({ valor, onSave, ...r }) => <input className="inp" defaultValue={valor} key={valor} onBlur={(e) => e.target.value.trim() && e.target.value !== valor && onSave(e.target.value.trim())} {...r} />;
+
+/* campo de meta: vazio = sem meta */
+const Meta = ({ m, valor, onChange }) => (
+  <input className="inp" type="number" min="0" max={m.un === '%' ? 100 : undefined} step="0.1" inputMode="decimal" placeholder="sem meta" value={valor ?? ''} aria-label={m.rotulo}
+    onChange={(e) => onChange(e.target.value === '' ? null : Math.max(0, Number(e.target.value)))} />
+);
 
 export default function Ajustes() {
   const S = useStore();
@@ -63,6 +70,38 @@ export default function Ajustes() {
           <label className="f">Prazo (dias)<input className="inp" type="number" min="0" max="30" value={e.prazoDias} onChange={(ev) => setE({ ...e, prazoDias: Number(ev.target.value) || 0 })} /></label>
           <button className="btn ac" disabled={!e.nome.trim()} onClick={() => { act.add('empresas', { nome: e.nome.trim(), tarifa: e.tarifa, prazoDias: e.prazoDias }); setE({ nome: '', tarifa: 0, prazoDias: 1 }); }}><Icon n="plus" size={18} /> Cadastrar</button>
         </div>
+      </div>
+
+      <div className="card">
+        <h2>Metas de SLA dos motoristas</h2>
+        <p className="sub">As metas acordadas. Deixe em branco o que não for avaliar. A meta padrão vale para todo motorista que não tiver regra própria; a gestão acompanha na aba SLA.</p>
+        <div className="form">
+          {METRICAS_SLA.map((x) => (
+            <label className="f" key={x.k} title={x.ajuda}>{x.rotulo} ({x.op === '>=' ? 'mínimo' : 'máximo'}{x.un === '%' ? ', %' : ', por dia'})
+              <Meta m={x} valor={S.ajustes.sla?.[x.k]} onChange={(v) => act.ajustes({ sla: { ...S.ajustes.sla, [x.k]: v } })} />
+            </label>
+          ))}
+        </div>
+        <p className="small muted" style={{ marginTop: 8 }}>{METRICAS_SLA.map((x) => `${x.rotulo}: ${x.ajuda}`).join(' ')}</p>
+        <h3 style={{ font: 'italic 700 16px var(--f1)', textTransform: 'uppercase', margin: '20px 0 4px' }}>Regra de cada motorista</h3>
+        {S.motoristas.length === 0 ? <p className="small muted">Cadastre motoristas acima para definir regras por motorista.</p> : (
+          <div className="list">
+            {S.motoristas.map((mo) => {
+              const modo = mo.sla?.modo || 'padrao';
+              const setSla = (patch) => act.upd('motoristas', mo.id, { sla: { ...mo.sla, ...patch } });
+              const n = regrasEfetivas(S, mo).length;
+              return (
+                <div className="item" key={mo.id} style={{ alignItems: 'end' }}>
+                  <div style={{ flex: '1 1 170px' }}><b>{mo.nome}</b><div className="small muted">{modo === 'nenhuma' ? 'Não é avaliado' : `${n} meta(s) valendo`}</div></div>
+                  <label className="f" style={{ flex: '1 1 190px' }}>Regra<select className="sel" value={modo} onChange={(e) => setSla({ modo: e.target.value })}>{MODOS_SLA.map(([v, r]) => <option key={v} value={v}>{r}</option>)}</select></label>
+                  {modo === 'proprio' && METRICAS_SLA.map((x) => (
+                    <label className="f" key={x.k} style={{ flex: '1 1 110px' }}>{x.rotulo}<Meta m={x} valor={mo.sla?.[x.k]} onChange={(v) => setSla({ [x.k]: v })} /></label>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="grid g2">

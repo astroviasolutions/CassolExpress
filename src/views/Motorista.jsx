@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { acertoQuinzena, brl, dataBR, hoje, num, OCORRENCIAS, quinzena, quinzenaAnterior, STATUS } from '../lib.js';
 import { act, useStore } from '../store.js';
+import { avaliarSla, STATUS_SLA } from '../sla.js';
 import { Chips, Icon, Modal, Vazio } from '../ui.jsx';
+import { CelulaSla } from './Sla.jsx';
 
 function posicao() {
   return new Promise((res) => {
@@ -42,6 +44,7 @@ export default function Motorista({ modo = 'dono', motoristaId }) {
 
   const q = quinzena(h);
   const extratos = [q, quinzenaAnterior(q)].map((x) => acertoQuinzena(S, m, x));
+  const sla = avaliarSla(S, m, h.slice(0, 8) + '01', h);
 
   return (
     <div className="stack">
@@ -50,7 +53,7 @@ export default function Motorista({ modo = 'dono', motoristaId }) {
       )}
       <div className="phone">
         <div className="row between"><div><p className="k-l">Olá,</p><b style={{ font: 'italic 800 22px var(--f1)', textTransform: 'uppercase' }}>{m.nome}</b></div></div>
-        <div style={{ margin: '14px 0' }}><Chips valor={aba} onChange={setAba} opcoes={[['rota', 'Minha rota'], ['extrato', 'Meu extrato']]} /></div>
+        <div style={{ margin: '14px 0' }}><Chips valor={aba} onChange={setAba} opcoes={[['rota', 'Minha rota'], ['extrato', 'Meu extrato'], ['metas', 'Metas']]} /></div>
 
         {aba === 'rota' ? (<>
           <p><b>{num(dados.entPac)}</b> de {num(dados.totalPac)} pacotes entregues</p>
@@ -87,7 +90,18 @@ export default function Motorista({ modo = 'dono', motoristaId }) {
             </section>
           )}
           <p className="small muted" style={{ marginTop: 18 }}>Ao dar baixa, a localização do celular é guardada junto como posição de apoio (se você permitir).</p>
-        </>) : (
+        </>) : aba === 'metas' ? (
+          <div className="stack">
+            <p className="small muted">Suas metas neste mês (até hoje). Só contam pacotes com baixa.</p>
+            {sla.regras.length === 0 ? <p className="muted">Nenhuma meta definida para você.</p> : sla.regras.map((r) => (
+              <div className="card" key={r.k} style={{ padding: 16 }}>
+                <p className="k-l">{r.rotulo}</p>
+                <div className="row between"><div className="k-v" style={{ fontSize: 30 }}>{r.texto}</div><CelulaSla r={{ ...r, texto: r.ok == null ? 'sem dados' : r.ok ? 'no alvo' : 'abaixo' }} /></div>
+              </div>
+            ))}
+            {sla.regras.length > 0 && <span className={`tag ${STATUS_SLA[sla.status][0]}`}>{STATUS_SLA[sla.status][1]}</span>}
+          </div>
+        ) : (
           <div className="stack">
             {extratos.map((e, i) => (
               <div className="card" key={e.motorista.id + i} style={{ padding: 16 }}>

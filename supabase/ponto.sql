@@ -22,6 +22,7 @@ create table if not exists public.colaboradores (
   lng double precision check (lng between -180 and 180),
   raio_m integer not null default 100 check (raio_m between 20 and 1000),
   carga_min integer check (carga_min is null or carga_min between 1 and 1440),  -- carga diária, opcional
+  bate_ponto boolean not null default true,    -- false: cadastro sem registro de ponto
   user_id uuid unique references auth.users(id) on delete set null
 );
 
@@ -65,6 +66,8 @@ begin
   end loop;
 end $$;
 
+alter table public.colaboradores add column if not exists bate_ponto boolean not null default true;  -- para bancos que já rodaram a versão anterior
+
 -- ---------- apoio -------------------------------------------------------
 create or replace function public.colab_atual() returns uuid
 language sql stable security definer set search_path = public as $$
@@ -88,7 +91,7 @@ begin
   fim := (ini + interval '1 month')::date;
   return jsonb_build_object(
     'colaborador', (select jsonb_build_object('id',c.id,'nome',c.nome,'funcao',c.funcao,'endereco',c.endereco,
-                      'raio_m',c.raio_m,'carga_min',c.carga_min,'tem_local',(c.lat is not null and c.lng is not null))
+                      'raio_m',c.raio_m,'carga_min',c.carga_min,'bate_ponto',c.bate_ponto,'tem_local',(c.lat is not null and c.lng is not null))
                     from public.colaboradores c where c.id = cid),
     'batidas', coalesce((select jsonb_agg(jsonb_build_object('id',p.id,'em',p.em,'tipo',p.tipo,'origem',p.origem,'dist_m',p.dist_m) order by p.em)
                          from public.pontos p where p.colaborador_id = cid and p.dia >= ini and p.dia < fim), '[]'::jsonb),
@@ -104,6 +107,7 @@ begin
   if p_tipo not in ('entrada','saida_intervalo','volta_intervalo','saida') then raise exception 'tipo_invalido'; end if;
   select * into c from public.colaboradores where user_id = auth.uid() and ativo;
   if not found then raise exception 'colaborador_nao_vinculado'; end if;
+  if not c.bate_ponto then raise exception 'sem_ponto'; end if;
   if c.lat is null or c.lng is null then raise exception 'sem_local'; end if;
   if p_lat is null or p_lng is null or p_precisao is null or p_precisao > 150 then raise exception 'gps_fraco'; end if;
   d := public.dist_metros(p_lat, p_lng, c.lat, c.lng);

@@ -23,11 +23,11 @@ export function posicao() {
 }
 
 const doServidor = {
-  colab: (r) => ({ id: r.id, nome: r.nome, funcao: r.funcao || '', ativo: r.ativo, endereco: r.endereco || '', lat: r.lat, lng: r.lng, raio: r.raio_m, cargaMin: r.carga_min, vinculado: !!r.user_id, temLocal: r.lat != null && r.lng != null }),
+  colab: (r) => ({ id: r.id, nome: r.nome, funcao: r.funcao || '', ativo: r.ativo, endereco: r.endereco || '', lat: r.lat, lng: r.lng, raio: r.raio_m, cargaMin: r.carga_min, vinculado: !!r.user_id, temLocal: r.lat != null && r.lng != null, batePonto: r.bate_ponto !== false }),
   batida: (r) => ({ id: r.id, colaboradorId: r.colaborador_id, em: r.em, tipo: r.tipo, origem: r.origem, dist: r.dist_m }),
   pedido: (r) => ({ id: r.id, colaboradorId: r.colaborador_id, data: r.dia, tipo: r.tipo, hora: String(r.hora).slice(0, 5), motivo: r.motivo, status: r.status, resposta: r.resposta, criadoEm: r.criado_em }),
 };
-const paraServidor = (c) => ({ nome: c.nome, funcao: c.funcao || null, ativo: c.ativo !== false, endereco: c.endereco || null, lat: c.lat ?? null, lng: c.lng ?? null, raio_m: c.raio || RAIO_PADRAO, carga_min: c.cargaMin || null });
+const paraServidor = (c) => ({ nome: c.nome, funcao: c.funcao || null, ativo: c.ativo !== false, endereco: c.endereco || null, lat: c.lat ?? null, lng: c.lng ?? null, raio_m: c.raio || RAIO_PADRAO, carga_min: c.cargaMin || null, bate_ponto: c.batePonto !== false });
 const rpc = async (nome, args) => { const { data, error } = await (await sb()).rpc(nome, args); if (error) throw new Error(error.message); return data; };
 
 /* ============================ DONO ============================ */
@@ -109,6 +109,7 @@ function useColabLocal({ colaboradorId, mes }) {
     carregando: false, erro: '', recarregar: () => {},
     async bater(tipo) {
       const g = getState(), col = g.colaboradores.find((x) => x.id === colaboradorId);
+      if (col?.batePonto === false) throw new Error('sem_ponto');
       if (!col || col.lat == null || col.lng == null) throw new Error('sem_local');
       const pos = await posicao();
       if (!(pos.precisao <= PRECISAO_MAX)) throw new Error('gps_fraco');
@@ -140,7 +141,7 @@ function useColabServidor({ mes }) {
       const r = await rpc('ponto_meus_dados', { p_mes: mes });
       if (meu !== reqId.current) return;
       if (r?.erro) throw new Error(r.erro);
-      const colab = { id: r.colaborador.id, nome: r.colaborador.nome, funcao: r.colaborador.funcao || '', endereco: r.colaborador.endereco || '', raio: r.colaborador.raio_m, cargaMin: r.colaborador.carga_min, temLocal: r.colaborador.tem_local };
+      const colab = { id: r.colaborador.id, nome: r.colaborador.nome, funcao: r.colaborador.funcao || '', endereco: r.colaborador.endereco || '', raio: r.colaborador.raio_m, cargaMin: r.colaborador.carga_min, temLocal: r.colaborador.tem_local, batePonto: r.colaborador.bate_ponto !== false };
       setD({ colab, batidas: r.batidas.map((b) => ({ id: b.id, colaboradorId: colab.id, em: b.em, tipo: b.tipo, origem: b.origem, dist: b.dist_m })), pedidos: r.pedidos.map((q) => ({ id: q.id, data: q.dia, tipo: q.tipo, hora: String(q.hora).slice(0, 5), motivo: q.motivo, status: q.status, resposta: q.resposta, criadoEm: q.criado_em })), carregando: false, erro: '' });
     } catch (e) { if (meu === reqId.current) setD((x) => ({ ...x, carregando: false, erro: mensagemErro(e) })); }
   }, [mes]);

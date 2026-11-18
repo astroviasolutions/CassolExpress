@@ -61,6 +61,8 @@ export default function PontoColab({ colaboradorId }) {
   if (H.carregando) return <div className="card"><div className="empty">Carregando…</div></div>;
   if (!colab) return <div className="card"><Vazio titulo="Colaborador não encontrado" texto={H.erro || 'Peça ao administrador para conferir o seu cadastro.'} /></div>;
 
+  if (colab.batePonto === false) return <div className="card"><Vazio titulo="Sem registro de ponto" texto="O seu cadastro não usa registro de ponto. Se isso estiver errado, fale com o administrador." /></div>;
+
   return (
     <div className="phone">
       <p className="k-l">Olá,</p>

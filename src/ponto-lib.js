@@ -73,6 +73,7 @@ export function lerCoordenadas(txt) {
 }
 
 const MSG = {
+  sem_ponto: 'O seu cadastro não usa registro de ponto.',
   sem_local: 'O local de trabalho ainda não foi cadastrado. Fale com o administrador.',
   gps_fraco: 'O sinal de GPS está fraco. Vá para um lugar aberto, espere uns segundos e tente de novo.',
   sequencia_invalida: 'Essa batida não é a próxima do dia. Atualize a tela.',
