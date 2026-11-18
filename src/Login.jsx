@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { entrar, temServidor } from './auth.js';
 import { act } from './store.js';
 import { logoCompleta } from './theme.js';
+import PantherStage from './components/PantherStage.jsx';
 import { Icon } from './ui.jsx';
 
 /* Cena de fundo: linhas de velocidade (como na logo) + uma rota de entrega com um ponto em movimento.
@@ -66,24 +67,38 @@ function Cena({ boost }) {
 export default function Login({ tema, onEntrar }) {
   const boost = useRef(1);
   const logoRef = useRef(null);
+  const pantera = useRef(null);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [ver, setVer] = useState(false);
   const [erro, setErro] = useState('');
   const [busy, setBusy] = useState(false);
   const [wipe, setWipe] = useState(false);
+  const [saindo, setSaindo] = useState(false);
 
   const mover = (e) => {
     const l = logoRef.current; if (!l) return;
     const x = (e.clientX / window.innerWidth - 0.5) * 2, y = (e.clientY / window.innerHeight - 0.5) * 2;
     l.style.transform = `perspective(900px) rotateY(${x * 7}deg) rotateX(${-y * 5}deg) translate(${x * 8}px, ${y * 6}px)`;
   };
-  const lancar = (sessao) => { boost.current = 40; setWipe(true); setTimeout(() => onEntrar(sessao), 520); };
+  /* Sucesso: a pantera corre para fora e só então entra no Painel. O 3D nunca trava o login:
+     sem modelo, sem WebGL, com erro ou lento demais (teto de 2,4 s), entra pelo caminho antigo. */
+  const lancar = async (sessao) => {
+    boost.current = 40; setSaindo(true);
+    let correu = false;
+    try {
+      correu = await Promise.race([pantera.current?.sair() ?? false, new Promise((r) => setTimeout(() => r(false), 2400))]);
+    } catch { correu = false; }
+    if (correu) return onEntrar(sessao);
+    const reduz = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduz) setWipe(true);
+    setTimeout(() => onEntrar(sessao), reduz ? 260 : 520);
+  };
 
   async function enviar(e) {
     e.preventDefault();
     setErro(''); setBusy(true);
-    try { lancar(await entrar(email.trim(), senha)); } catch (err) { setErro(err.message || 'Não foi possível entrar.'); setBusy(false); }
+    try { lancar(await entrar(email.trim(), senha)); } catch (err) { setErro(err.message || 'Não foi possível entrar.'); setBusy(false); setSaindo(false); pantera.current?.reagir(); }
   }
   async function demo(papel, comDados) {
     setBusy(true);
@@ -97,11 +112,12 @@ export default function Login({ tema, onEntrar }) {
       <Cena boost={boost} />
       <section className="l-hero" aria-hidden="true">
         <img ref={logoRef} className={`l-logo${tema === 'escuro' ? ' round' : ''}`} src={logoCompleta(tema)} alt="" draggable="false" />
+        <PantherStage ref={pantera} tema={tema} />
         <span className="l-tag">Parceiro logístico <b>·</b> J&amp;T</span>
       </section>
 
       <section className="l-side">
-        <form className="l-card" onSubmit={enviar} noValidate>
+        <form className={`l-card${saindo ? ' sai' : ''}`} onSubmit={enviar} noValidate>
           <h1>Casol <span>Express</span></h1>
           <p className="lead">Gestão de entregas, comissões e caixa em um só lugar.</p>
 

@@ -184,9 +184,18 @@ label.f { display: grid; gap: 6px; font-size: 13px; color: var(--tx2); }
    LOGIN
    ========================================================= */
 .login { position: fixed; inset: 0; display: grid; grid-template-columns: 1.15fr 0.85fr; background: var(--bg); overflow: hidden; }
-.login canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.login > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .login::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 30% 50%, transparent 40%, var(--bg) 100%); }
-.l-hero { position: relative; z-index: 2; display: grid; place-items: center; padding: 40px; }
+.l-hero { position: relative; z-index: 2; display: grid; grid-template-rows: auto minmax(0, 1fr); justify-items: center; align-items: center; gap: 6px; padding: 40px 40px 56px; }
+.l-hero .l-logo, .l-hero .l-logo.round { width: min(230px, 40%); align-self: end; }
+.pantera { position: relative; width: min(720px, 100%); aspect-ratio: 5 / 4; max-height: 100%; align-self: start; pointer-events: none; will-change: transform; }
+.pantera-img, .pantera-cv { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.pantera-img { transition: opacity 0.5s ease; }
+.pantera-img.off { opacity: 0; }
+.pantera-cv { opacity: 0; transition: opacity 0.5s ease; }
+.pantera-cv.on { opacity: 1; }
+.pantera-cv canvas { display: block; width: 100% !important; height: 100% !important; }
+.l-card.sai { opacity: 0; transform: translateX(46px); transition: opacity 0.5s ease, transform 0.6s var(--spring); pointer-events: none; animation: none; }
 .l-logo { width: min(560px, 86%); transition: transform 0.25s ease-out; filter: drop-shadow(0 30px 70px color-mix(in srgb, var(--ac) 40%, transparent)); animation: float 6s ease-in-out infinite; }
 .l-logo.round { width: min(430px, 70%); }
 @keyframes float { 50% { margin-top: -10px; } }
@@ -219,7 +228,7 @@ label.f { display: grid; gap: 6px; font-size: 13px; color: var(--tx2); }
 @keyframes wipe { 0% { transform: translateX(-110%) skewX(-14deg); } 50% { transform: translateX(0) skewX(-14deg); } 100% { transform: translateX(110%) skewX(-14deg); } }
 @media (max-width: 900px) {
   .login { grid-template-columns: 1fr; grid-template-rows: auto 1fr; overflow-y: auto; }
-  .l-hero { padding: 24px 24px 0; } .l-logo, .l-logo.round { width: min(260px, 56%); } .l-tag { display: none; }
+  .l-hero { padding: 14px 24px 0; gap: 0; } .l-hero .l-logo, .l-hero .l-logo.round { display: none; } .pantera { width: min(420px, 100%); aspect-ratio: 8 / 5; align-self: center; } .pantera-img { object-fit: cover; } .l-tag { display: none; }
   .l-side { align-items: start; padding-top: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
