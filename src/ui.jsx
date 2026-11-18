@@ -19,6 +19,7 @@ const P = {
   eye: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0',
   undo: 'M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3',
   arrow: 'M5 12h14M13 6l6 6-6 6',
+  clock: 'M12 7v5l3 2M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0',
 };
 export const Icon = ({ n, size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

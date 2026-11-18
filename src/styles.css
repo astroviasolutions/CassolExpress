@@ -234,3 +234,15 @@ label.f { display: grid; gap: 6px; font-size: 13px; color: var(--tx2); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* ---------- ponto ---------- */
+.relogio { font: italic 800 56px / 1 var(--f1); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.relogio small { font-size: 0.5em; color: var(--tx2); }
+.bater {
+  width: 100%; min-height: 64px; padding: 16px; border-radius: 99px; cursor: pointer; border: 1px solid var(--line); background: var(--surface2); color: var(--tx);
+  font: italic 800 18px var(--f1); letter-spacing: 0.06em; text-transform: uppercase; transition: transform 0.2s var(--spring), filter 0.2s;
+}
+.bater.ac { background: var(--ac); color: var(--on-ac); border-color: transparent; min-height: 78px; font-size: 21px; }
+.bater:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.06); }
+.bater:focus-visible { outline: 2px solid var(--ac); outline-offset: 3px; }
+.bater:disabled { opacity: 0.55; cursor: wait; }

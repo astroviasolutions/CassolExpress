@@ -13,6 +13,8 @@ const Comissao = lazy(() => import('./views/Comissao.jsx'));
 const Caixa = lazy(() => import('./views/Caixa.jsx'));
 const Rastreador = lazy(() => import('./views/Rastreador.jsx'));
 const Ajustes = lazy(() => import('./views/Ajustes.jsx'));
+const Ponto = lazy(() => import('./views/Ponto.jsx'));
+const PontoColab = lazy(() => import('./views/PontoColab.jsx'));
 
 const NAV = [
   ['painel', 'Painel', 'Como está a operação hoje', 'home', Painel],
@@ -21,6 +23,7 @@ const NAV = [
   ['motorista', 'Motorista', 'Como o motorista vê e dá baixa no celular', 'truck', Motorista],
   ['comissao', 'Comissão', 'Acerto quinzenal com descontos', 'percent', Comissao],
   ['caixa', 'Caixa', 'Entradas, saídas e previsão', 'wallet', Caixa],
+  ['ponto', 'Ponto', 'Registro de ponto por localização, folhas e ajustes', 'clock', Ponto],
   ['rastreador', 'Rastreador', 'Veículos e integração com rastreamento', 'pin', Rastreador],
   ['ajustes', 'Ajustes', 'Motoristas, valores e prazos', 'sliders', Ajustes],
 ];
@@ -75,6 +78,19 @@ export default function App() {
           <div className="row">{Toggle}<button className="btn icon" onClick={saiu} aria-label="Sair"><Icon n="logout" size={20} /></button></div>
         </div>
         <Suspense fallback={Carregando}><Motorista modo="motorista" motoristaId={sessao.motoristaId} /></Suspense>
+      </main>
+    );
+  }
+
+  /* colaborador: só a tela de ponto do celular */
+  if (sessao.papel === 'colaborador') {
+    return (
+      <main className="main" style={{ marginLeft: 0 }}>
+        <div className="row between" style={{ marginBottom: 16 }}>
+          <img src={logoRedonda(tema)} alt="Casol Express" width="52" height="52" style={{ borderRadius: '50%' }} />
+          <div className="row">{Toggle}<button className="btn icon" onClick={saiu} aria-label="Sair"><Icon n="logout" size={20} /></button></div>
+        </div>
+        <Suspense fallback={Carregando}><PontoColab /></Suspense>
       </main>
     );
   }

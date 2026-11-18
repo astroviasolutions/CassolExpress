@@ -11,6 +11,7 @@ const KEY = 'casol_express_v1';
 export const vazio = () => ({
   v: 1, demo: false,
   empresas: [], motoristas: [], romaneios: [], paradas: [], lancamentos: [], acertos: [], veiculos: [],
+  colaboradores: [], pontos: [], pedidosPonto: [],
   ajustes: { saldoInicial: 0, valorPadrao: 0, meta: 0, categorias: [] },
 });
 
