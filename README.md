@@ -36,9 +36,11 @@ O **login** já usa o Supabase Auth quando as variáveis existem. Os **dados** a
 
 ## Publicar
 
-**Atenção:** o modo demonstração não tem senha. Nunca publique em produção sem as duas variáveis `VITE_SUPABASE_*` configuradas, senão qualquer pessoa entra no sistema.
+**Atenção:** o modo demonstração não tem senha. Por isso o build de produção **não abre** sem as variáveis `VITE_SUPABASE_*` (mostra "Sistema não configurado").
 
-React → **Vercel**. Em *Project Settings → Environment Variables* cadastre as duas variáveis `VITE_SUPABASE_*`. Não publique antes de testar o RLS.
+Hospedagem prevista: **Cloudflare** (build `npm run build`, pasta `dist`). Em variáveis de ambiente de *build* cadastre `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`. Os cabeçalhos de segurança e o redirecionamento das rotas já estão em `public/_headers` e `public/_redirects`.
+
+Antes de publicar, siga o checklist de **SEGURANCA.md** (Supabase: desativar cadastro público, senha forte, MFA do dono, backup) e teste o RLS. Ordem do SQL: `schema.sql`, `ponto.sql`, `sla.sql`.
 
 ## O que fica de fora por enquanto
 - "Reanalisar com planilha nova" no Romaneio (importar atualização sobre um romaneio existente).

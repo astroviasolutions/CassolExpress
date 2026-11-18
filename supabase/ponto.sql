@@ -75,7 +75,7 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 create or replace function public.dist_metros(lat1 double precision, lng1 double precision, lat2 double precision, lng2 double precision)
-returns double precision language sql immutable as $$
+returns double precision language sql immutable set search_path = public as $$
   select 6371000 * 2 * asin(sqrt(least(1, power(sin(radians(lat2 - lat1) / 2), 2)
          + cos(radians(lat1)) * cos(radians(lat2)) * power(sin(radians(lng2 - lng1) / 2), 2))));
 $$;

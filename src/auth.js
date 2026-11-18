@@ -5,6 +5,9 @@
 const URL_SB = import.meta.env.VITE_SUPABASE_URL;
 const CHAVE_SB = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export const temServidor = Boolean(URL_SB && CHAVE_SB);
+/* O modo demonstração NÃO tem senha. Em produção sem Supabase configurado, o sistema se recusa a abrir
+   (em vez de entregar uma tela de entrada livre). Para publicar uma demonstração de propósito: VITE_PERMITIR_DEMO=sim. */
+export const demoBloqueado = import.meta.env.PROD && !temServidor && import.meta.env.VITE_PERMITIR_DEMO !== 'sim';
 
 let cliente;
 export async function sb() {

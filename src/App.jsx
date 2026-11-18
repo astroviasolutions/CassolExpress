@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { sair, sessaoAtual, temServidor } from './auth.js';
+import { demoBloqueado, sair, sessaoAtual, temServidor } from './auth.js';
 import Login from './Login.jsx';
 import { useStore } from './store.js';
 import { logoRedonda, useTema } from './theme.js';
@@ -60,6 +60,7 @@ export default function App() {
   const entrou = (s) => { if (!temServidor) sessionStorage.setItem(K_SESSAO, JSON.stringify(s)); setSessao(s); };
   const saiu = async () => { await sair(); sessionStorage.removeItem(K_SESSAO); setSessao(null); };
 
+  if (demoBloqueado) return <main className="main" style={{ marginLeft: 0 }}><div className="card"><div className="empty"><b>Sistema não configurado</b><p>O acesso por senha (Supabase) não está configurado neste ambiente, então o sistema não abre. Fale com o administrador.</p></div></div></main>;
   if (sessao === undefined) return null;
   if (!sessao) return <Login tema={tema} onEntrar={entrou} />;
 
